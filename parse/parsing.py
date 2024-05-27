@@ -28,6 +28,15 @@ def quickParse(voltage,src,offset):
         
         dataFile = 'data/Kalibrierung_2024/'+offset+'/'+src+'_'+voltage+'/raw-ch'+ ch +'.dat'
         #bgFile = 'data/Kalibrierung_2024/'+offset+'/Untergrund_'+voltage+'/raw-ch'+ ch +'.dat'
+
+        dataBool = os.path.exists(dataFile)
+
+        if not dataBool: #test if files needed for spectrum exist
+            print("raw data file does not exist, continuing")
+            print("----------------------------\n")
+            continue
+        
+        
         
         if os.stat(dataFile).st_size/(1024*1024*1024) > 2:
             print("file bigger than 2GB, continuing")
