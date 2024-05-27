@@ -16,7 +16,7 @@ def quickParse(voltage,src,offset):
     
     # src = 'Bi207' #Bi207, Cs137, Na22, Untergrund
     # voltage = '1750' #0500, 0750, 1000, 1250, 1500, 1750
-    outPath = 'parseOutput/'+src+'_'+voltage+'_'+offset
+    outPath = 'parseOutput/'+src+'_'+voltage+'_Offset'+offset
     
     if os.path.isdir(outPath) == False:
         os.mkdir(outPath) #dynamically create output directory

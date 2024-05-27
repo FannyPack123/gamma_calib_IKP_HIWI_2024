@@ -12,7 +12,7 @@ import numpy as np
 import os
 
 from parse import quickParse
-#from parse import genSpectrum
+from parse import genSpectrum
 
 
 
@@ -48,26 +48,53 @@ measTimeDict= { '1000': {'Bi207':       10,
                          }
                }
 
-voltages = measTimeDict.keys()
+
 offset = "0000"
+parseBool = False
+genBool = True
 
-for volt in voltages:
-    print("Voltage: "+volt+"\n")
-    sources = measTimeDict[volt].keys()
-    for src in sources:
-        print("Source: "+src+"\n")
-        quickParse(volt, src, offset)
-    
-    
-    
-    
-    
-    
-    
-    
-    
 
-# genSpectrum(voltage="1300", src="Bi207", offset="0000")
+voltages = measTimeDict.keys()
+
+#parsing
+if parseBool:
+    for volt in voltages:
+        
+        print("parsing for voltage: "+volt+"\n")
+        sources = measTimeDict[volt].keys()
+        
+        for src in sources:
+            
+            print("parsing for source: "+src+"\n")
+            quickParse(volt, src, offset)
+
+#spectrum generation
+if genBool:
+    for volt in voltages:
+        
+        print("generating spectra for voltage: "+volt+"\n")
+        sources = np.asarray(list(measTimeDict[volt].keys()))
+        
+        for src in sources[:-1]:
+            
+            print("generating spectra for source: "+src+"\n")
+            genSpectrum(volt, src, offset, measTimeDict[volt][src],measTimeDict[volt]['Untergrund'])
+            
+
+if not parseBool and not genBool:
+    print("parsing and spectrum generation is set to False")
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

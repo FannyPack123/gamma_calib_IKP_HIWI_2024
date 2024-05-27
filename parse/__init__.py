@@ -6,4 +6,4 @@ Created on Fri May 24 23:15:26 2024
 """
 
 from .parsing import quickParse
-#from .genSpectra import genSpectrum
+from .genSpectra import genSpectrum
