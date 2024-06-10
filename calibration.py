@@ -13,6 +13,19 @@ import os
 
 from parse import quickParse
 from parse import genSpectrum
+from fitting import getCEdgeVals
+
+
+    #gamma peak vals for sources, NUDAT
+srcGammaEnergyDict = { 'Bi207'  : np.array([569.698e3,1063.656e3,1770.228e3]),  #328.10e3,511.0e3,897.77e3,1442.2e3 intensity too low
+                       'Cs137'  : np.array([661.657e3]),                        #283.5e3
+                       'Na22'   : np.array([1274.537e3])                        #511.0e3
+                      }
+
+
+
+
+
 
 
 
@@ -56,33 +69,46 @@ genBool = True
 
 voltages = measTimeDict.keys()
 
-#parsing
-if parseBool:
-    for volt in voltages:
+# #parsing
+# if parseBool:
+#     for volt in voltages:
         
-        print("parsing for voltage: "+volt+"\n")
-        sources = measTimeDict[volt].keys()
+#         print("parsing for voltage: "+volt+"\n")
+#         sources = measTimeDict[volt].keys()
         
-        for src in sources:
+#         for src in sources:
             
-            print("parsing for source: "+src+"\n")
-            quickParse(volt, src, offset)
+#             print("parsing for source: "+src+"\n")
+#             quickParse(volt, src, offset)
 
-#spectrum generation
-if genBool:
-    for volt in voltages:
+# #spectrum generation
+# if genBool:
+#     for volt in voltages:
         
-        print("generating spectra for voltage: "+volt+"\n")
-        sources = np.asarray(list(measTimeDict[volt].keys()))
+#         print("generating spectra for voltage: "+volt+"\n")
+#         sources = np.asarray(list(measTimeDict[volt].keys()))
         
-        for src in sources[:-1]:
+#         for src in sources[:-1]:
             
-            print("generating spectra for source: "+src+"\n")
-            genSpectrum(volt, src, offset, measTimeDict[volt][src],measTimeDict[volt]['Untergrund'])
+#             print("generating spectra for source: "+src+"\n")
+#             genSpectrum(volt, src, offset, measTimeDict[volt][src],measTimeDict[volt]['Untergrund'])
             
 
-if not parseBool and not genBool:
-    print("parsing and spectrum generation is set to False")
+# if not parseBool and not genBool:
+#     print("parsing and spectrum generation is set to False")
+    
+    
+#compton edge fitting
+for volt in ['1300']:
+    
+    print("getting compton edges for voltage: "+volt+"\n")
+    sources = np.asarray(list(measTimeDict[volt].keys()))
+    
+    for src in ['Bi207']:
+        
+        print("source: "+src+"\n")
+        getCEdgeVals(volt, src, offset)        
+
 
 
 
