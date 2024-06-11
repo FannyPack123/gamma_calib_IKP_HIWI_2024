@@ -97,16 +97,16 @@ def getCEdgeVals(voltage,src,offset):
         spect = np.genfromtxt(dataFile, delimiter=',') 
         CEs = findEdge(spect, 1000, 5)
         print(CEs[0])
-        outer = 1500
+        outer = 1000
         
-        plt.figure()
-        plt.plot(spect[0],spect[1])
-        plt.yscale('log')
+        # plt.figure()
+        # plt.plot(spect[0],spect[1])
+        # plt.yscale('log')
         
         for i in range(len(CEs[0])):     #cycle through all comptom edges and fit data to CE function
         
-            fitStart = list(spect[0]).index(CEs[0][i]) - outer
-            fitEnd = list(spect[0]).index(CEs[0][i])  + outer
+            fitStart = int(list(spect[0]).index(CEs[0][i]) - outer*(1+i*.01))
+            fitEnd = int(list(spect[0]).index(CEs[0][i])  + outer*(1+i*.01))
             # fitStart = int(CEs[0][i])  - outer
             # fitEnd = int(CEs[0][i])  + outer
             if fitStart < 0:
@@ -114,10 +114,14 @@ def getCEdgeVals(voltage,src,offset):
             print(fitStart)
             print(fitEnd)
             
-            plt.vlines(CEs[0], 0.0, max(spect[1]), color="purple", linestyles='dotted', label= "guesses")
-            
+            plt.figure()
+            plt.plot(spect[0]-CEs[0][i],spect[1],color='blue')
+            plt.yscale('log')
+            # plt.vlines(CEs[0], 0.0, max(spect[1]), color="purple", linestyles='dotted', label= "guesses")
+            plt.vlines(CEs[0]-CEs[0][i], 0.0, max(spect[1]), color="purple", linestyles='dotted', label= "guesses")
+
             CE_params = optimize.curve_fit(CEFunc, spect[0][fitStart:fitEnd], spect[1][fitStart:fitEnd], np.append(CEs[0][i], pzero[1:]), bounds=((0, 0, 0, 0, 0, 0), (np.inf, np.inf, np.inf, np.inf, np.inf, np.inf)))
-            # CE_params = optimize.curve_fit(CEFunc, spect[0][fitStart:fitEnd]-CEs[0][i], spect[1][fitStart:fitEnd], pzero, bounds=((0, 0, 0, 0, 0, 0), (0.1, np.inf, np.inf, np.inf, np.inf, np.inf)))
+            # CE_params = optimize.curve_fit(CEFunc, spect[0][fitStart:fitEnd]-CEs[0][i], spect[1][fitStart:fitEnd], pzero, bounds=((0, 0, 0, 0, 0, 0), (np.inf, np.inf, np.inf, np.inf, np.inf, np.inf)))
             
             # CE_params = optimize.curve_fit(logFunc, spect[0][fitStart:fitEnd], spect[1][fitStart:fitEnd], np.append(CEs[0][0], pzero[1:]))
             
@@ -132,9 +136,15 @@ def getCEdgeVals(voltage,src,offset):
             
             # plt.plot(spect[0][fitStart-outer:fitEnd+outer],spect[1][fitStart-outer:fitEnd+outer])
             # plt.vlines(CEs[0], 0.0, max(spect[1]), color="purple")
-            plt.plot(spect[0][fitStart:fitEnd], CE[fitStart:fitEnd])
+            # plt.plot(spect[0][fitStart:fitEnd], CE[fitStart:fitEnd])
+            # plt.hlines(1000, xmin=spect[0][fitStart:fitEnd][0]-CEs[0][i], xmax=spect[0][fitStart:fitEnd][-1]-CEs[0][i], color='red')
+            plt.hlines(1000, xmin=spect[0][fitStart:fitEnd][0]-CEs[0][i], xmax=spect[0][fitStart:fitEnd][-1]-CEs[0][i], color='red')
+            
+            plt.plot(spect[0][fitStart:fitEnd]-CEs[0][i], CE[fitStart:fitEnd])
+            # plt.plot(spect[0]-CEs[0][i], CE)
             # plt.plot(spect[0], CE)
-            plt.vlines(CE_params[0][0], ymin=0, ymax=max(spect[1]), color='orange', label= "fitted Compton edge")
+            # plt.vlines(CE_params[0][0], ymin=0, ymax=max(spect[1]), color='orange', label= "fitted Compton edge")
+            plt.vlines(CE_params[0][0]-CEs[0][i], ymin=0, ymax=max(spect[1]), color='orange', label= "fitted Compton edge")
             
             
             # fit2Start = 3500
@@ -151,8 +161,8 @@ def getCEdgeVals(voltage,src,offset):
             # CE2 = CEFunc(spect[0], *CE2_params[0])
             
             # yVals = CEFunc(spect[0], *pzero)
-        plt.legend()
-        plt.savefig("testFitting.pdf", format="pdf", dpi=400)
+            plt.legend()
+        # plt.savefig("testFitting.pdf", format="pdf", dpi=400)
         plt.show()
         
         
