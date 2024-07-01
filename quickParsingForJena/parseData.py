@@ -9,7 +9,7 @@ import os
 # dataSet = sys.argv[1]
 dataSet = "Bi207_1300"
 
-outPath = 'quickOut'
+outPath = 'quickOut/' + dataSet
 
 if os.path.isdir(outPath) == False:
     os.mkdir(outPath) #dynamically create output directory
