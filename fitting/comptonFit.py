@@ -68,6 +68,8 @@ def logFunc(E,Ec,sigma,a,b,c,d):
     return np.log(CEFunc(E, Ec, sigma, a, b, c, d))
 
 
+
+
 # xVals = np.linspace(-b/(2*a)-Ec/2, Ec+10000, num = 1000)
 
 # yVals = CEFunc(xVals, *pzero)
