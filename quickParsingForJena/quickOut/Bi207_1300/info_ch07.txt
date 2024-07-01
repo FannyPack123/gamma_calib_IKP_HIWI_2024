@@ -1,2 +1,0 @@
-total events: 575690
-most common value: 1114
