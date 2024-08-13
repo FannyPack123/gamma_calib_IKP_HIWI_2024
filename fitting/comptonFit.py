@@ -11,21 +11,11 @@ import numpy as np
 import math
 from scipy import special
 from scipy import optimize
+from scipy.signal import savgol_filter, find_peaks
 import os
 
 
-a = 5.0e-05
-b = 0.1
-c = 0.0
-Ec = 0.0
-sigma = 500.0
-d = 0.0
-
-pzero = np.array([Ec,sigma,a,b,c,d])
-
-p0 = np.array([500,190000,30])
-
-def findEdge(spectrum,sampleRate,cutoff):   #algorithm to find comptomn edges by looking for jumps in data
+def findEdge2(spectrum,sampleRate,cutoff):   #algorithm to find comptomn edges by looking for jumps in data
     
     edgeX = np.array([spectrum[0][0]])
     edgeY = np.array([spectrum[1][0]])
@@ -54,6 +44,21 @@ def findEdge(spectrum,sampleRate,cutoff):   #algorithm to find comptomn edges by
 
 
 
+def findEdge(spectrum,sampleRate,cutoff):
+    scaling = 10
+    filty = savgol_filter(spectrum[1][:cutoff], 301, 3)
+    der = savgol_filter(np.gradient(filty, sampleRate)*scaling, 401,1)
+    peaks = find_peaks(-der, height=10, prominence=1, distance=10, width=100)
+    peaksLoc = np.array([])
+    peaksHgt = np.array([])
+    for i in peaks[0]:
+        peaksLoc = np.append(peaksLoc, spectrum[0][i])
+    for i in peaks[0]:
+        peaksHgt = np.append(peaksHgt, der[i]/scaling)
+    return np.stack((peaksLoc, peaksHgt),axis=-1), der
+
+
+
 def halfGauss(EArr,mu,sigma,a,d):               #this one works!!!!!!!
     
     results = np.array([])
@@ -66,6 +71,8 @@ def halfGauss(EArr,mu,sigma,a,d):               #this one works!!!!!!!
     
     return results
 
+
+
 def CEFunc(E,Ec,sigma,a,b,c,d):     #theoretical compton edge function
     
     # if a <=0:
@@ -77,10 +84,38 @@ def CEFunc(E,Ec,sigma,a,b,c,d):     #theoretical compton edge function
     
     return alpha*special.erfc(exponent) + beta*np.exp(-(exponent**2)) + d
 
+
+
 def logFunc(E,Ec,sigma,a,b,c,d):
     # print(CEFunc(E, Ec, sigma, a, b, c, d))
     return np.log(CEFunc(E, Ec, sigma, a, b, c, d))
 
+
+
+
+# spect = np.genfromtxt('../spectraOutput/06/Bi207/1300V_Offset0000_spect.csv', delimiter=',')          #test
+# EdgeGuesses = findEdge(spect, 0.01, 7000)
+# print(EdgeGuesses[0])
+
+
+
+# a = 5.0e-05
+# b = 0.1
+# c = 0.0
+# Ec = 0.0
+# sigma = 500.0
+# d = 0.0
+
+# pzero = np.array([Ec,sigma,a,b,c,d])
+
+mu = 500
+sigma = 190000
+a = 30
+d = 0
+
+
+
+p0 = np.array([mu,sigma,a])
 
 
 def getCEdgeVals(voltage,src,offset):
@@ -103,17 +138,20 @@ def getCEdgeVals(voltage,src,offset):
         #     continue
         
         spect = np.genfromtxt(dataFile, delimiter=',') 
-        CEs = findEdge(spect, 1000, 5)
-        print(CEs[0])
-        outer = 1000
+        EdgeGuesses = findEdge(spect, 0.01, 7000)
+        print(EdgeGuesses[0])
+        # print(EdgeGuesses[0])
         
-
-        for i in range(len(CEs[0])):     #cycle through all comptom edges and fit data to CE function
+        gamma = math.sqrt(a*10e3)*(2*math.pi*math.e)**-0.25
         
+        for Edge in EdgeGuesses[0]:     #cycle through all comptom edges and fit data to CE function
+            
+            outer = gamma/math.sqrt(abs(Edge[1]))  #estimate of stddev of to be fitted gaussian, based on slope at Edge guess
+            print(outer)
             # fitStart = int(list(spect[0]).index(CEs[0][i]) - outer*(1+i*.01))
             # fitEnd = int(list(spect[0]).index(CEs[0][i])  + outer*(1+i*.01))
-            fitStart = int(CEs[0][i])  - outer
-            fitEnd = int(CEs[0][i])  + outer
+            fitStart = int(Edge[0])  - int(1.5*outer)
+            fitEnd = int(Edge[0])  + int(1.5*outer)
             if fitStart < 0:
                 continue
             print(fitStart)
@@ -121,11 +159,11 @@ def getCEdgeVals(voltage,src,offset):
             
             plt.figure()
             plt.title("channel no." + ch + ", " + src + ", " + voltage)
-            plt.plot(spect[0],spect[1],color='cyan')
+            plt.plot(spect[0],spect[1],color='C0')
             plt.yscale('log')
-            plt.vlines(CEs[0], 0.0, max(spect[1]), color="purple", linestyles='dotted', label= "guesses")
-            # print(CEs[0][i])
-            CE_params = optimize.curve_fit(halfGauss, spect[0][fitStart:fitEnd], spect[1][fitStart:fitEnd], np.append((CEs[0][i]-p0[0]*1.177), p0))
+            plt.vlines(Edge[0], 0.0, max(spect[1]), color="purple", linestyles='dotted', label= "guesses")
+            
+            CE_params = optimize.curve_fit(halfGauss, spect[0][fitStart:fitEnd], spect[1][fitStart:fitEnd], np.append((Edge[0]-p0[0]*1.177), p0))
             
             print(CE_params[0])
             
@@ -134,10 +172,47 @@ def getCEdgeVals(voltage,src,offset):
             
             plt.hlines(1000, xmin=spect[0][fitStart:fitEnd][0], xmax=spect[0][fitStart:fitEnd][-1], color='red')
 
-            plt.plot(spect[0][fitStart:fitEnd], CE[fitStart:fitEnd],color="green")
-            plt.vlines(CE_params[0][0]+CE_params[0][1]*1.177, ymin=0, ymax=max(spect[1]), color='orange', label= "fitted Compton edge")
+            plt.plot(spect[0][fitStart:fitEnd], CE[fitStart:fitEnd],color="orange")
+            plt.vlines(CE_params[0][0]+CE_params[0][1]*1.177, ymin=0, ymax=max(spect[1]), color='green', label= "fitted Compton edge")
             
             
             plt.legend()
+            
+            
+            
+         # for i in range(len(EdgeGuesses[0])):     #cycle through all comptom edges and fit data to CE function
+         #     outer = 1000
+         #     # fitStart = int(list(spect[0]).index(CEs[0][i]) - outer*(1+i*.01))
+         #     # fitEnd = int(list(spect[0]).index(CEs[0][i])  + outer*(1+i*.01))
+         #     fitStart = int(EdgeGuesses[0][i])  - outer
+         #     fitEnd = int(EdgeGuesses[0][i])  + outer
+         #     if fitStart < 0:
+         #         continue
+         #     print(fitStart)
+         #     print(fitEnd)
+             
+         #     plt.figure()
+         #     plt.title("channel no." + ch + ", " + src + ", " + voltage)
+         #     plt.plot(spect[0],spect[1],color='cyan')
+         #     plt.yscale('log')
+         #     plt.vlines(EdgeGuesses[0], 0.0, max(spect[1]), color="purple", linestyles='dotted', label= "guesses")
+         #     # print(CEs[0][i])
+         #     CE_params = optimize.curve_fit(halfGauss, spect[0][fitStart:fitEnd], spect[1][fitStart:fitEnd], np.append((EdgeGuesses[0][i]-p0[0]*1.177), p0))
+             
+         #     print(CE_params[0])
+             
+             
+         #     CE = halfGauss(spect[0], *CE_params[0])
+             
+         #     plt.hlines(1000, xmin=spect[0][fitStart:fitEnd][0], xmax=spect[0][fitStart:fitEnd][-1], color='red')
+
+         #     plt.plot(spect[0][fitStart:fitEnd], CE[fitStart:fitEnd],color="green")
+         #     plt.vlines(CE_params[0][0]+CE_params[0][1]*1.177, ymin=0, ymax=max(spect[1]), color='orange', label= "fitted Compton edge")
+             
+             
+         #     plt.legend()
+        
+        
+        
         # plt.savefig("testFitting.pdf", format="pdf", dpi=400)
         plt.show()

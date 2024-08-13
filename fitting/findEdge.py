@@ -12,7 +12,7 @@ import numpy as np
 import math
 from scipy import special
 from scipy import optimize
-from scipy.signal import savgol_filter
+from scipy.signal import savgol_filter, find_peaks
 import os
 
 
@@ -65,43 +65,36 @@ def findEdge(spectrum,sampleRate,cutoff):
     
 
 def findEdge2(spectrum,sampleRate,cutoff):
-    # print(np.diff(spectrum[1][:cutoff]))
-    # yder = np.diff(spectrum[0][:cutoff])/np.diff(spectrum[1][:cutoff])
-    # xder = np.array([])
-    
-    # for i in range(len(yder)-cutoff):
-    #     print(len(yder)-cutoff)
-    #     xtemp = (spectrum[0][i+1]+spectrum[0][i])/2
-    #     xder = np.append(xder, xtemp)
-    
-    # return xder,yder
-    # y = spectrum[1][:cutoff]
     filty = savgol_filter(spectrum[1][:cutoff], 301, 3)
     y = np.log10(filty)
-    return np.gradient(filty, sampleRate)
-    # return np.gradient(y, sampleRate)
-    # return y
+    der = savgol_filter(np.gradient(filty, sampleRate)*10, 401,1)
+    peaks = find_peaks(-der, height=10, prominence=1, distance=10, width=100)
+    peaksLoc = np.array([])
+    for i in peaks[0]:
+        peaksLoc = np.append(peaksLoc, spectrum[0][i])
+    return der, peaksLoc
+
 
 
 cut = 7000
 
 # CEs = findEdge(spect, 1000, 1)
-CEs = findEdge2(spect, 1, cut)
-print(CEs)
+CEs = findEdge2(spect, .01, cut)
 # print(min(CEs[0][1]))
 # yder = savgol_filter(np.exp(CEs[:cut]), 101, 3)#+abs(min(CEs[:cut]))
-# yder = CEs[:cut]
-yder = np.exp(CEs[:cut]*np.log(10))      #10 hoch CEs
+yder = CEs[0][:cut]
+edgePoints = CEs[1]
+# yder = np.exp(CEs[0][:cut]*np.log(10))      #10 hoch CEs
 yhat = savgol_filter(spect[1][:cut], 301, 3)
-edgePoints = np.array([])
-for i in range(len(yder)):
-    if yder[i] < 0:
-        edgePoints = np.append(edgePoints, spect[0][i])
+
+
 
 plt.figure()
-plt.yscale('log')
+# plt.yscale('log')
+plt.ylim(-500, 700)
+plt.plot(spect[0][:cut],yder, color="orange")
 plt.plot(spect[0][:cut],yhat)
-plt.plot(spect[0][:cut],yder)
+plt.vlines(edgePoints, min(yder), max(yder), color="red")
 # plt.plot(spect[0][:cut], yhat)
 # plt.vlines(edgePoints,min(yder),max(yder),color='green')
 # plt.plot(CEs[1],CEs[2])
