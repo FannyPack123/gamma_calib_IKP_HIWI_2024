@@ -16,6 +16,8 @@ def genSpectrum(voltage,src,offset,tMeasSrc,tMeasBg):
     
     for ch in ["00","01","02","03","04","05","06","07","08","09","10"]:
         
+        print("processing channel " + ch) 
+        
         inputPathRaw = 'parseOutput/'+src+'_'+voltage+'_Offset'+offset+'/peak_ch'+ch+'.csv'
         inputPathBg = 'parseOutput/Untergrund_'+voltage+'_Offset'+offset+'/peak_ch'+ch+'.csv'
         

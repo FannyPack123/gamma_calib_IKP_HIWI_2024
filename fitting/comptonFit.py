@@ -15,35 +15,6 @@ from scipy.signal import savgol_filter, find_peaks
 import os
 
 
-def findEdge2(spectrum,sampleRate,cutoff):   #algorithm to find comptomn edges by looking for jumps in data
-    
-    edgeX = np.array([spectrum[0][0]])
-    edgeY = np.array([spectrum[1][0]])
-    edges = np.array([])
-    
-    for i in range(int(len(spectrum[0])/sampleRate)):
-        
-        start = int(spectrum[0][0]) + int(i*sampleRate)
-        end = int(spectrum[0][0]) + int((i+1)*sampleRate)
-        avg = np.average(spectrum[1][start:end])
-        
-        edgeX = np.append(edgeX, start)
-        edgeY = np.append(edgeY, avg)
-        edgeX = np.append(edgeX, end)
-        edgeY = np.append(edgeY, avg)
-        
-    for j in range(len(edgeX)-1):
-        
-        if math.log(edgeY[j],10) - math.log(edgeY[j+1],10) > 0.5 and edgeY[j] > cutoff:
-            
-            edges = np.append(edges, (edgeX[j+2]+edgeX[j])/2)
-            # edges = np.append( edges, edgeX[j])
-            # edges = np.append( edges, j)
-            
-    return edges,edgeX,edgeY
-
-
-
 def findEdge(spectrum,sampleRate,cutoff):
     scaling = 10
     delta = 30
@@ -91,56 +62,16 @@ def halfGauss(EArr,mu,sigma,a,d):               #this one works!!!!!!!
     
     return results
 
-
-
-def CEFunc(E,Ec,sigma,a,b,c,d):     #theoretical compton edge function
-    
-    # if a <=0:
-    #     return 1000000000
-    
-    alpha = 0.5*(a*(E**2+sigma**2)+b*E+c)
-    beta = ((-sigma)/(math.sqrt(2*math.pi))*a*(E+Ec)+b)
-    exponent = (E-Ec)/(math.sqrt(2)*sigma)
-    
-    return alpha*special.erfc(exponent) + beta*np.exp(-(exponent**2)) + d
-
-
-
-def logFunc(E,Ec,sigma,a,b,c,d):
-    # print(CEFunc(E, Ec, sigma, a, b, c, d))
-    return np.log(CEFunc(E, Ec, sigma, a, b, c, d))
-
-
-
-
-# spect = np.genfromtxt('../spectraOutput/06/Bi207/1300V_Offset0000_spect.csv', delimiter=',')          #test
-# EdgeGuesses = findEdge(spect, 0.01, 7000)
-# print(EdgeGuesses[0])
-
-
-
-# a = 5.0e-05
-# b = 0.1
-# c = 0.0
-# Ec = 0.0
-# sigma = 500.0
-# d = 0.0
-
-# pzero = np.array([Ec,sigma,a,b,c,d])
-
 mu0 = 500
 sigma0 = 190000
 a0 = 100000
 d0 = 0
 
-
-
 p0 = np.array([mu0,sigma0,a0])
-
 
 def getCEdgeVals(voltage,src,offset):
     for ch in ["00","01","02","03","04","05","06","07","08","09","10"]:
-        
+        vals = np.array([])
         print("processing channel " + ch)
         
         dataFile = 'spectraOutput/'+ch+'/'+src+'/'+voltage+'V_Offset'+offset+'_spect.csv'
@@ -162,9 +93,7 @@ def getCEdgeVals(voltage,src,offset):
         for e in range(len(EdgeGuesses[0])):    
             print(EdgeGuesses[0][e])
         print(len(EdgeGuesses[0]))
-        # print(EdgeGuesses[0])
         
-        # gamma = math.sqrt(a*10e3)*(2*math.pi*math.e)**-0.25
         plt.figure()
         plt.title("channel no." + ch + ", " + src + ", " + voltage)
         plt.plot(spect[0][:7000],spect[1][:7000],color='C0')
@@ -176,7 +105,7 @@ def getCEdgeVals(voltage,src,offset):
             mu = Edge[3]
             print("MU GUESS:")
             print(mu)
-            muInd = Edge[4]
+            muInd = int(Edge[4])
             sigma = Edge[0] - Edge[3]
             print("SIGMA GUESS:")
             print(sigma)
@@ -187,8 +116,6 @@ def getCEdgeVals(voltage,src,offset):
             
             print("OUTER: ")
             print(outer)
-            # fitStart = int(list(spect[0]).index(CEs[0][i]) - outer*(1+i*.01))
-            # fitEnd = int(list(spect[0]).index(CEs[0][i])  + outer*(1+i*.01))
             fitStart = sigmaInd  - int(2*outer)
             fitEnd = sigmaInd  + int(3*outer)
             if fitStart < 0:
@@ -200,8 +127,10 @@ def getCEdgeVals(voltage,src,offset):
             print(fitEnd)
             
             
-            # plt.plot(spect[0][:7000], EdgeGuesses[1],color="black")
+            # plt.plot(spect[0][:7000], EdgeGuesses[1],color="black")   #plot derivative of spectrum
             # plt.ylim(-1000,1000)
+            
+            
             plt.yscale('log')
             
             
@@ -210,18 +139,21 @@ def getCEdgeVals(voltage,src,offset):
             
             CE_params = optimize.curve_fit(halfGauss, spect[0][fitStart:fitEnd], spect[1][fitStart:fitEnd], [mu, sigma, a0, d0])
             
+            print('FIT PARAMS:')
             print(CE_params[0])
             
+            fitCEdge = CE_params[0][0]+CE_params[0][1]*1.177
+            vals = np.append(vals, fitCEdge)
             
             CE = halfGauss(spect[0], *CE_params[0])
-            control = halfGauss(spect[0], *[mu, sigma, a0, CE_params[0][3]]) # d0])
+            # control = halfGauss(spect[0], *[mu, sigma, a0, CE_params[0][3]]) # d0])
             
             plt.hlines(1000, xmin=spect[0][fitStart:fitEnd][0], xmax=spect[0][fitStart:fitEnd][-1], color='red')
 
             plt.plot(spect[0][fitStart:fitEnd], CE[fitStart:fitEnd],color="orange")
             # plt.plot(spect[0][fitStart:fitEnd], control[fitStart:fitEnd],color="black")
             
-            plt.vlines(CE_params[0][0]+CE_params[0][1]*1.177, ymin=0, ymax=max(spect[1]), color='green', label= "fitted Compton edge")
+            plt.vlines(fitCEdge, ymin=0, ymax=max(spect[1]), color='green', label= "fitted Compton edge")
             plt.hlines(1000, xmin=spect[0][fitStart:fitEnd][0], xmax=spect[0][fitStart:fitEnd][-1], color='red')
             
             plt.legend()
@@ -261,6 +193,6 @@ def getCEdgeVals(voltage,src,offset):
          #     plt.legend()
         
         
-        
+        np.savetxt('fitOutput/'+ch+'_'+src+'_'+voltage+'V_Offset'+offset+'_CEdgeFitValues.csv', vals, delimiter=",")
         plt.savefig('fitOutput/'+ch+'_'+src+'_'+voltage+'V_Offset'+offset+'_fit.pdf', format="pdf", dpi=400)
         plt.show()
