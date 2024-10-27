@@ -11,22 +11,30 @@ import matplotlib.pyplot as plt
 import argparse
 import numpy as np
 import os
+import re
 
 def quickParse(voltage,src,offset):
     
     # src = 'Bi207' #Bi207, Cs137, Na22, Untergrund
     # voltage = '1750' #0500, 0750, 1000, 1250, 1500, 1750
     outPath = 'parseOutput/'+src+'_'+voltage+'_Offset'+offset
+    inPath = 'data/Kalibrierung_2024/'+offset+'/'+src+'_'+voltage
     
     if os.path.isdir(outPath) == False:
         os.mkdir(outPath) #dynamically create output directory
 
 
-    for ch in ["00","01","02","03","04","05","06","07","08","09","10"]: #cycle through all channels (detectors)
+    # for ch in ["00","01","02","03","04","05","06","07","08","09","10"]: #cycle through all channels (detectors)
+    for file in os.listdir(inPath):    
+    
+        ch = re.findall(r'\d+', file)[0]  
         
+        print(ch)
+    
         print("processing channel " + ch)
         
-        dataFile = 'data/Kalibrierung_2024/'+offset+'/'+src+'_'+voltage+'/raw-ch'+ ch +'.dat'
+        # dataFile = 'data/Kalibrierung_2024/'+offset+'/'+src+'_'+voltage+'/raw-ch'+ ch +'.dat'
+        dataFile = inPath + '/' + file
         #bgFile = 'data/Kalibrierung_2024/'+offset+'/Untergrund_'+voltage+'/raw-ch'+ ch +'.dat'
 
         dataBool = os.path.exists(dataFile)

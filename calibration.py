@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 import argparse
 import numpy as np
 import os
+import re
 
 from parse import quickParse
 from parse import genSpectrum
@@ -62,24 +63,25 @@ measTimeDict= { '1000': {'Bi207':       30,
                }
 
 
-offset = "8000"
+# offset = "0000"
 parseBool = True
 genBool = True
-
+inPath = 'data/Kalibrierung_2024'
 
 voltages = measTimeDict.keys()
 
 #parsing
-# if parseBool:
-#     for volt in voltages:
-        
-#         print("parsing for voltage: "+volt+"\n")
-#         sources = measTimeDict[volt].keys()
-        
-#         for src in sources:
+if parseBool:
+    for offset in os.listdir(inPath):
+        for volt in ['1300']:
             
-#             print("parsing for source: "+src+"\n")
-#             quickParse(volt, src, offset)
+            print("parsing for voltage: "+volt+"\n")
+            sources = measTimeDict[volt].keys()
+            
+            for src in sources:
+                
+                print("parsing for source: "+src+"\n")
+                quickParse(volt, src, offset)
 
 #spectrum generation
 # if genBool:
@@ -99,25 +101,25 @@ voltages = measTimeDict.keys()
     
     
 #compton edge fitting
-for volt in ['1300']:
+# for volt in ['1300']:
     
-    print("getting compton edges for voltage: "+volt+"\n")
-    sources = np.asarray(list(measTimeDict[volt].keys()))
+#     print("getting compton edges for voltage: "+volt+"\n")
+#     sources = np.asarray(list(measTimeDict[volt].keys()))
     
-    for src in ['Bi207']:
+#     for src in ['Bi207']:
         
-        print("source: "+src+"\n")
-        getCEdgeVals(volt, src, offset)     
+#         print("source: "+src+"\n")
+#         getCEdgeVals(volt, src, offset)     
 
-for volt in voltages:
+# for volt in voltages:
     
-    print("getting compton edges for voltage: "+volt+"\n")
-    sources = np.asarray(list(measTimeDict[volt].keys()))
+#     print("getting compton edges for voltage: "+volt+"\n")
+#     sources = np.asarray(list(measTimeDict[volt].keys()))
     
-    for src in sources:
+#     for src in sources:
         
-        print("source: "+src+"\n")
-        getCEdgeVals(volt, src, offset)   
+#         print("source: "+src+"\n")
+#         getCEdgeVals(volt, src, offset)   
 
 #calculate calibration coefficient
 #TODO: 
@@ -125,29 +127,29 @@ for volt in voltages:
 #2. fit linear function to find calib-coeff for each voltage
 #3. use that info to find gain-curve
 
-calPts = {}
+# calPts = {}
 
-for ch in ['00','01','02','03','04','05','06','07','08','09','10',]:
-    calPts[ch] = {}
+# for ch in ['00','01','02','03','04','05','06','07','08','09','10',]:
+#     calPts[ch] = {}
     
-    for volt in ['1300','1000']:
+#     for volt in ['1300','1000']:
         
-        sources = np.asarray(list(measTimeDict[volt].keys()))
+#         sources = np.asarray(list(measTimeDict[volt].keys()))
         
-        for src in sources:
-            dataFile = 'fitOutput/'+ch+'_'+src+'_'+volt+'V_Offset'+offset+'_CEdgeFitValues.csv'
-            dataBool = os.path.exists(dataFile)
+#         for src in sources:
+#             dataFile = 'fitOutput/'+ch+'_'+src+'_'+volt+'V_Offset'+offset+'_CEdgeFitValues.csv'
+#             dataBool = os.path.exists(dataFile)
 
-            if not dataBool:
-                print("Edge file does not exist, continuing")
-                print("----------------------------\n")
-                continue
-            CEdges = np.array([np.genfromtxt(dataFile, delimiter=',')])
+#             if not dataBool:
+#                 print("Edge file does not exist, continuing")
+#                 print("----------------------------\n")
+#                 continue
+#             CEdges = np.array([np.genfromtxt(dataFile, delimiter=',')])
             
-            for i in range(len(CEdges)):
-                calPts[ch][volt] = np.array(CEdges[i], srcGammaEnergyDict[src][i])
+#             for i in range(len(CEdges)):
+#                 calPts[ch][volt] = np.array(CEdges[i], srcGammaEnergyDict[src][i])
 
-print(calPts)
+# print(calPts)
 
 
 
